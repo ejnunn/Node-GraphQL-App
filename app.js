@@ -4,6 +4,7 @@ const { graphqlHTTP } = require('express-graphql');
 const { buildSchema } = require('graphql');
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const env = require('dotenv').config()
 
 const Event = require('./models/event');
 const User = require('./models/user');
@@ -23,6 +24,7 @@ app.use(
             description: String!
             price: Float!
             date: String!
+            creator: String!
         }
 
         type User {
@@ -45,6 +47,7 @@ app.use(
 
         type RootQuery {
             events: [Event!]!
+            
         }
 
         type RootMutation {
@@ -75,14 +78,28 @@ app.use(
                 title: args.eventInput.title,
                 description: args.eventInput.description,
                 price: args.eventInput.price,
-                date: new Date(args.eventInput.date)
+                date: new Date(args.eventInput.date),
+                creator: '609c4c94ab507a1b01aec2ef'
             });
+            let createdEvent;
             return event
                 .save()
                 .then(result => {
+                    createdEvent = { ...result._doc, _id: result._doc._id.toString() };
+                    return User.findById('609c4c94ab507a1b01aec2ef')
                     console.log(result);
                     return { ...result._doc };
-                }).catch(err => {
+                }).then(result => {
+                    if (!user) {
+                        throw new Error("User does not exist.");
+                    }
+                    user.createdEvents.push(event);
+                    return user.save(); 
+                })
+                .then( result => {
+                    return createdEvent;
+                })
+                .catch(err => {
                     console.log(err);
                     throw err;
                 });
@@ -116,13 +133,16 @@ app.use(
 
 mongoose
     .connect(
-        `mongodb+srv://${process.env.MONGO_USER}:${
-            process.env.MONGO_PASSWORD
-        }@cluster0.qpjgt.mongodb.net/${process.env.MONGO_DB}?retryWrites=true&w=majority`
+        `mongodb+srv://${process.env.MONGO_USER}:${process.env.MONGO_PASSWORD}@cluster0.qpjgt.mongodb.net/${process.env.MONGO_DB}?retryWrites=true&w=majority`
     )
     .then(() => {
+        console.log(`Successfully connected to ${process.env.MONGO_DB}`)
         app.listen(3000);
     })
     .catch(err => {
         console.log(err);
+        console.log("Did not connect");
+        console.log(`${process.env.MONGO_USER}`);
+        console.log(`${process.env.MONGO_PASSWORD}`);
+        console.log(`${process.env.MONGO_DB}`);
     });
