@@ -3,7 +3,11 @@ const bodyParser = require('body-parser');
 const { graphqlHTTP } = require('express-graphql');
 const { buildSchema } = require('graphql');
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
+
 const Event = require('./models/event');
+const User = require('./models/user');
+const { argsToArgsConfig } = require('graphql/type/definition');
 
 
 
@@ -21,11 +25,22 @@ app.use(
             date: String!
         }
 
+        type User {
+            _id: ID!
+            email: String!
+            password: String
+        }
+
         input EventInput {
             title: String!
             description: String!
             price: Float!
             date: String!
+        }
+
+        input UserInput {
+            email: String!
+            password: String!
         }
 
         type RootQuery {
@@ -34,6 +49,7 @@ app.use(
 
         type RootMutation {
             createEvent(eventInput: EventInput): Event
+            createUser(userInput: UserInput): User
         }
 
         schema {
@@ -70,8 +86,29 @@ app.use(
                     console.log(err);
                     throw err;
                 });
+        },
+        createUser: args => {
+            return User.findOne({email: args.userInput.email})
+                .then(user => {
+                    if (user) {
+                        throw new Error('User exists already.');
+                    }
+                    return bcrypt.hash(args.userInput.password, 12);
+                })
+                .then(hashedPassword => {
+                    const user = new User({
+                        email: args.userInput.email,
+                        password: hashedPassword
+                    });
+                    return user.save();
+                })
+                .then(result => {
+                    return { ...result._doc, password: null, _id:result.id.toString() };
+                })
+                .catch(err => {
+                    throw err;
+                });
         }
-
     },
     graphiql: true,
   }),
