@@ -4,31 +4,30 @@ const Event = require('../../models/event');
 const User = require('../../models/user');
 const Booking = require('../../models/booking');
 
-const events = eventIds => {
-    return Event.find({ _id: { $in: eventIds } })
-        .then(events => {
-            return events.map(event => {
-                return {
-                    ...event._doc,
-                    _id: event.id,
-                    date: new Date(event._doc.date).toISOString(),
-                    creator: user.bind(this, event._doc.creator)
-                }
-            })
-        })
-        .catch(err => {
-            throw err;
-        })
+const transformEvent = event => {
+    return {
+        ...event._doc,
+        _id: event.id,
+        date: new Date(event._doc.date).toISOString(),
+        creator: user.bind(this, event._doc.creator)
+    };
+}
+
+const events = async eventIds => {
+    try {
+        const events = await Event.find({ _id: { $in: eventIds } });
+        return events.map(event => {
+            return transformEvent(event);
+        });
+    } catch (err) {
+        throw err;
+    }
 }
 
 const singleEvent = async eventId => {
     try {
         const event = await Event.findById(eventId);
-        return {
-            ...event._doc,
-            _id: event.id,
-            creator: user.bind(this, event._doc.creator)
-        }
+        return transformEvent(event);
     } catch (err) {
         throw err;
     }
@@ -53,12 +52,7 @@ module.exports = {
         return Event.find()
             .then(events => {
                 return events.map(event => {
-                    return {
-                        ...event._doc,
-                        _id: event.id,
-                        date: new Date(event._doc.date).toISOString(),
-                        creator: user.bind(this, event._doc.creator)
-                    };
+                    return transformEvent(event);
                 });
             })
             .catch(err => {
@@ -82,7 +76,6 @@ module.exports = {
             throw err;
         }
     },
-
     createEvent: args => {
         const event = new Event({
             title: args.eventInput.title,
@@ -92,56 +85,44 @@ module.exports = {
             creator: '609c4c94ab507a1b01aec2ef'
         });
         let createdEvent;
-        return event
-            .save()
-            .then(result => {
-                createdEvent = {
-                    ...result._doc,
-                    _id: result._doc._id.toString(),
-                    date: new Date(args.eventInput.date).toISOString(),
-                    creator: user.bind(this, result._doc.creator)
-                };
-                return User.findById('609c4c94ab507a1b01aec2ef')
-            }).then(result => {
-                if (!user) {
-                    throw new Error("User does not exist.");
-                }
-                user.createdEvents.push(event);
-                return user.save();
-            })
-            .then(result => {
-                return createdEvent;
-            })
-            .catch(err => {
-                console.log(err);
-                throw err;
-            });
+        try {
+            const result = await event.save();
+            createdEvent = transformEvent(result);
+            const creator = await User.findById('609c4c94ab507a1b01aec2ef');
+
+            if (!creator) {
+                throw new Error('User not found.');
+            }
+            creator.createdEvents.push(event);
+            await creator.save();
+
+            return createdEvent;
+        } catch (err) {
+            console.log(err);
+            throw err;
+        }
     },
     createUser: args => {
-        return User.findOne({ email: args.userInput.email })
-            .then(user => {
-                if (user) {
-                    throw new Error('User exists already.');
-                }
-                return bcrypt.hash(args.userInput.password, 12);
-            })
-            .then(hashedPassword => {
-                const user = new User({
-                    email: args.userInput.email,
-                    password: hashedPassword
-                });
-                return user.save();
-            })
-            .then(result => {
-                return {
-                    ...result._doc,
-                    password: null,
-                    _id: result.id.toString()
-                };
-            })
-            .catch(err => {
-                throw err;
+        try {
+            const existingUser = User.findOne({ email: args.userInput.email });
+            if (existingUser) {
+                throw new Error('User exists already.');
+            }
+            const hashedPassword = await bcrypt.hash(args.userInput.password, 12);
+            const user = new User({
+                email: args.userInput.email,
+                password: hashedPassword
             });
+            const result = await user.save();
+
+            return {
+                ...result._doc,
+                password: null,
+                _id: result.id.toString()
+            };
+        } catch (err) {
+            throw err;
+        }
     },
     bookEvent: async args => {
         const fetchedEvent = await Event.findOne({ _id: args.eventId });
@@ -162,11 +143,7 @@ module.exports = {
     cancelBooking: async args => {
         try {
             const booking = await Booking.findById(args.bookingId).populate('event');
-            const event = {
-                ...booking.event._doc,
-                _id: booking.event.id,
-                creator: user.bind(this, booking.event._doc.creator)
-            };
+            const event = transoformEvent(booking.event);
             await Booking.deleteOne({ _id: args.bookingId });
             return event;
         } catch (err) {
