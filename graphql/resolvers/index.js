@@ -1,9 +1,14 @@
-const bcrypt = require('bcryptjs');
+const authResolver = require('./auth');
+const eventsResolver = require('./events');
+const bookingResolver = require('./booking');
 
-const Event = require('../../models/event');
-const User = require('../../models/user');
-const Booking = require('../../models/booking');
+const rootResolver = {
+  ...authResolver,
+  ...eventsResolver,
+  ...bookingResolver
+};
 
+<<<<<<< HEAD
 const transformEvent = event => {
     return {
         ...event._doc,
@@ -151,3 +156,6 @@ module.exports = {
         }
     }
 }
+=======
+module.exports = rootResolver;
+>>>>>>> redo-refactor

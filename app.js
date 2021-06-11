@@ -6,10 +6,7 @@ const mongoose = require('mongoose');
 const graphQLSchema = require('./graphql/schema/index');
 const graphQLResolver = require('./graphql/resolvers/index');
 
-
 const app = express();
-
-
 
 app.use(
     '/graphql',
