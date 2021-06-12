@@ -5,8 +5,13 @@ const mongoose = require('mongoose');
 
 const graphQLSchema = require('./graphql/schema/index');
 const graphQLResolver = require('./graphql/resolvers/index');
+const isAuth = require('./middleware/is-auth');
 
 const app = express();
+
+app.use(bodyParser.json());
+
+app.use(isAuth);
 
 app.use(
     '/graphql',
@@ -28,7 +33,4 @@ mongoose
     .catch(err => {
         console.log(err);
         console.log("Did not connect");
-        console.log(`${process.env.MONGO_USER}`);
-        console.log(`${process.env.MONGO_PASSWORD}`);
-        console.log(`${process.env.MONGO_DB}`);
     });
