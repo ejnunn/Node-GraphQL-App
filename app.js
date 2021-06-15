@@ -19,7 +19,7 @@ app.use(
         schema: graphQLSchema,
         rootValue: graphQLResolver,
         graphiql: true,
-    }),
+    })
 );
 
 mongoose
