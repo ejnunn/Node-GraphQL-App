@@ -6,10 +6,21 @@ const mongoose = require('mongoose');
 const graphQLSchema = require('./graphql/schema/index');
 const graphQLResolver = require('./graphql/resolvers/index');
 const isAuth = require('./middleware/is-auth');
+const { restart } = require('nodemon');
 
 const app = express();
 
 app.use(bodyParser.json());
+
+app.use((req, res, next) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+    if (req.method === 'OPTIONS') {
+        return res.sendStatus(200);
+    }
+    next();
+});
 
 app.use(isAuth);
 
@@ -28,7 +39,7 @@ mongoose
     )
     .then(() => {
         console.log(`Successfully connected to ${process.env.MONGO_DB}`)
-        app.listen(3000);
+        app.listen(8000);
     })
     .catch(err => {
         console.log(err);
