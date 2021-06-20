@@ -63,7 +63,7 @@ type RootQuery {
     bookings: [Booking!]!
     login(email: String!, password: String!): AuthData
     users: [User!]!
-    messages(userId: ID!): [Messages!]!
+    messages(userId: ID!): [Message!]!
 }
 
 type RootMutation {
