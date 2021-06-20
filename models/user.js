@@ -16,6 +16,12 @@ const userSchema = new Schema({
       type: Schema.Types.ObjectId,
       ref: 'Event'
     }
+  ],
+  messagesSent: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: 'Message'
+    }
   ]
 });
 
