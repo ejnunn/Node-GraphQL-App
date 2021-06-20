@@ -1,5 +1,6 @@
 const Event = require('../../models/event');
 const User = require('../../models/user');
+const Message = require('../../models/message');
 const { dateToString } = require('../../helpers/date');
 
 const events = async eventIds => {
@@ -55,5 +56,28 @@ const transformBooking = booking => {
   };
 };
 
+const messages = async messageIds => {
+  try {
+    const messages = await Message.find({ _id: { $in: messageIds } });
+    return messages.map(message => {
+      return transformMessage(message);
+    });
+  } catch (err) {
+    throw err;
+  }
+};
+
+const transformMessage = message => {
+  return {
+    ...message._doc,
+    _id: message.id,
+    sender: user.bind(this, message._doc.sender),
+    recipient: user.bind(this, message._doc.recipient),
+    date: dateToString(message._doc.date),
+    body: message.body
+  };
+};
+
 exports.transformEvent = transformEvent;
 exports.transformBooking = transformBooking;
+exports.transformMessage = transformMessage;

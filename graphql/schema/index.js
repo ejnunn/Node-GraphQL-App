@@ -20,6 +20,7 @@ type Event {
 
 type Message {
   _id: ID!
+  sender: User!
   recipient: User!
   body: String!
   date: String!
@@ -31,6 +32,7 @@ type User {
   password: String
   createdEvents: [Event!]
   messagesSent: [Message!]
+  messagesReceived: [Message!]
 }
 
 type AuthData {
@@ -63,7 +65,7 @@ type RootQuery {
     bookings: [Booking!]!
     login(email: String!, password: String!): AuthData
     users: [User!]!
-    messages(userId: ID!): [Message!]!
+    messages(userId: ID!): [Message!]
 }
 
 type RootMutation {

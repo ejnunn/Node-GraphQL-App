@@ -4,10 +4,12 @@ const User = require('../../models/user');
 const { transformMessage } = require('./merge');
 
 module.exports = {
-    messages: async () => {
+    messages: async (args, req) => {
         try {
-            const messages = await Message.find();
-            return messages.map(message => {
+            console.log(args);
+            const user = await User.findOne({ _id: args.userId });
+            const messagesSent = await Message.find({ sender: args.userId });
+            return messagesSent.map(message => {
                 return transformMessage(message);
             });
         } catch (err) {
@@ -27,19 +29,21 @@ module.exports = {
         let sentMessage;
         try {
             const result = await message.save();
-            sentMessage = transform(result);
-            const sender = await User.findById(req.userId);
-            const sender = await User.findById(req.userId);
+            sentMessage = transformMessage(result);
+            const sender = await User.findById(message.sender);
+            const recipient = await User.findById(message.recipient);
 
             if (!sender) {
                 throw new Error('Sending user not found.');
             }
+            sender.messagesSent.push(message);
+            await sender.save();
+            
             if (!recipient) {
                 throw new Error('Recipient user not found.');
             }
-            sender.messagesSent.push(message);
             recipient.messagesReceived.push(message);
-            await creator.save();
+            await recipient.save();
 
             return sentMessage;
         } catch (err) {
@@ -47,33 +51,4 @@ module.exports = {
             throw err;
         }
     }
-    //   createEvent: async (args, req) => {
-    //     if (!req.isAuth) {
-    //       throw new Error('Unauthenticated!');
-    //     }
-    //     const event = new Event({
-    //       title: args.eventInput.title,
-    //       description: args.eventInput.description,
-    //       price: +args.eventInput.price,
-    //       date: new Date(args.eventInput.date),
-    //       creator: req.userId
-    //     });
-    //     let createdEvent;
-    //     try {
-    //       const result = await event.save();
-    //       createdEvent = transformEvent(result);
-    //       const creator = await User.findById(req.userId);
-
-    //       if (!creator) {
-    //         throw new Error('User not found.');
-    //       }
-    //       creator.createdEvents.push(event);
-    //       await creator.save();
-
-    //       return createdEvent;
-    //     } catch (err) {
-    //       console.log(err);
-    //       throw err;
-    //     }
-    //   }
 };
