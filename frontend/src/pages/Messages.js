@@ -7,174 +7,178 @@ import AuthContext from '../context/auth-context';
 import './Messages.css';
 
 class MessagesPage extends Component {
-  state = {
-    creating: false,
-    messages: []
-  };
-
-  static contextType = AuthContext;
-
-  constructor(props) {
-    super(props);
-    this.receiverElRef = React.createRef();
-    this.messageBodyElRef = React.createRef();
-  }
-
-  componentDidMount() {
-    this.fetchMessages();
-  }
-
-  startCreateMessageHandler = () => {
-    this.setState({ creating: true });
-  };
-
-  modalConfirmHandler = () => {
-    this.setState({ creating: false });
-    const receiver = this.receiverElRef.current.value;
-    const date = new Date().toISOString();
-    const messageBody = this.messageBodyElRef.current.value;
-    console.log(receiver);
-    if (receiver.trim().length === 0 || messageBody.trim().length === 0) {
-      return;
-    }
-
-    const token = this.context.token;
-    const userId = this.context.userId; // only render messages sent TO this user
-    
-    const message = { receiver, date, messageBody };
-    console.log(message);
-
-    const requestBody = {
-      query: `
-          mutation {
-            createMessage(messageInput: {}) {
-
-            }
-          }
-        `
+    state = {
+        creating: false,
+        messages: []
     };
 
-    fetch('http://localhost:8000/graphql', {
-      method: 'POST',
-      body: JSON.stringify(requestBody),
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: 'Bearer ' + token
-      }
-    })
-      .then(res => {
-        if (res.status !== 200 && res.status !== 201) {
-          throw new Error('Failed!');
-        }
-        return res.json();
-      })
-      .then(resData => {
+    static contextType = AuthContext;
+
+    constructor(props) {
+        super(props);
+        this.recipientElRef = React.createRef();
+        this.messageBodyElRef = React.createRef();
+    }
+
+    componentDidMount() {
         this.fetchMessages();
-      })
-      .catch(err => {
-        console.log(err);
-      });
-  };
+    }
 
-  modalCancelHandler = () => {
-    this.setState({ creating: false });
-  };
+    startCreateMessageHandler = () => {
+        this.setState({ creating: true });
+    };
 
-  fetchMessages() {
-    const requestBody = {
-      query: `
-          query {
-            messages(userId) {
-                _id
-                messages {
-                    sender {
+    modalConfirmHandler = () => {
+        this.setState({ creating: false });
+        const recipient = this.recipientElRef.current.state;
+        const date = new Date().toISOString();
+        const messageBody = this.messageBodyElRef.current.value;
+        console.log(recipient, date, messageBody);
+        if (recipient.length === 0 || messageBody.trim().length === 0) {
+            return;
+        }
+
+        const token = this.context.token;
+        const userId = this.context.userId; // only render messages sent TO this user
+        const recipientId = User.findOne(recipient.userId);
+        const message = { recipientId, date, messageBody };
+        console.log(message);
+
+        const requestBody = {
+            query: `
+                mutation {
+                    sendMessage(messageInput: {recipient: "60c3b3ed5a12956c3b8194bb", date: "2021-06-20T07:32:27.781Z", body: "Test message body."}) {
+                    _id
+                    recipient {
                         _id
                         email
                     }
                     date
-                    messageBody
+                    body
+                    }
                 }
+            `
+        };
+
+        fetch('http://localhost:8000/graphql', {
+            method: 'POST',
+            body: JSON.stringify(requestBody),
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: 'Bearer ' + token
             }
-          }
-        `
+        })
+            .then(res => {
+                if (res.status !== 200 && res.status !== 201) {
+                    throw new Error('Failed!');
+                }
+                return res.json();
+            })
+            .then(resData => {
+                this.fetchMessages(userId);
+            })
+            .catch(err => {
+                console.log(err);
+            });
     };
 
-    fetch('http://localhost:8000/graphql', {
-      method: 'POST',
-      body: JSON.stringify(requestBody),
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    })
-      .then(res => {
-        if (res.status !== 200 && res.status !== 201) {
-          throw new Error('Failed!');
-        }
-        return res.json();
-      })
-      .then(resData => {
-        const messages = resData.data.messages;
-        this.setState({ messages: messages });
-      })
-      .catch(err => {
-        console.log(err);
-      });
-  }
+    modalCancelHandler = () => {
+        this.setState({ creating: false });
+    };
 
-  render() {
-    const messageList = this.state.messages.map(message => {
-      return (
-        <li key={message._id} className="messages__list-item">
-          {message.title}
-        </li>
-      );
-    });
+    fetchMessages(userId) {
+        const requestBody = {
+            query: `
+                query {
+                    messages(userId: ${userId}) {
+                    _id
+                    recipient {
+                        _id
+                        email
+                    }
+                    date
+                    body
+                    }
+                }
+        `
+        };
 
-    const userList = ['ejnunn1@msn.com', 'test@test.com'];
-    let receiverSelectList = [];
-    userList.forEach(function(element) {
-        receiverSelectList.push({ label: element, value: element })
-    });
+        fetch('http://localhost:8000/graphql', {
+            method: 'POST',
+            body: JSON.stringify(requestBody),
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+            .then(res => {
+                if (res.status !== 200 && res.status !== 201) {
+                    throw new Error('Failed!');
+                }
+                return res.json();
+            })
+            .then(resData => {
+                const messages = resData.data.messages;
+                this.setState({ messages: messages });
+            })
+            .catch(err => {
+                console.log(err);
+            });
+    }
 
-    return (
-      <React.Fragment>
-        {this.state.creating && <Backdrop />}
-        {this.state.creating && (
-          <Modal
-            title="Post Message"
-            canCancel
-            canConfirm
-            onCancel={this.modalCancelHandler}
-            onConfirm={this.modalConfirmHandler}
-          >
-            <form>
-              <div className="form-control">
-                <label htmlFor="receiver">Receiver</label>
-                <Select options={receiverSelectList} ref={this.receiverElRef } />
-              </div>
-              <div className="form-control">
-                <label htmlFor="message-body">Message Body</label>
-                <textarea
-                  id="message-body"
-                  rows="4"
-                  ref={this.messageBodyElRef}
-                />
-              </div>
-            </form>
-          </Modal>
-        )}
-        {this.context.token && (
-          <div className="messages-control">
-            <p>Talk with other users!</p>
-            <button className="btn" onClick={this.startCreateMessageHandler}>
-              Post Message
+    render() {
+        const messageList = this.state.messages.map(message => {
+            return (
+                <li key={message._id} className="messages__list-item">
+                    {message.title}
+                </li>
+            );
+        });
+
+        const userList = ['ejnunn1@msn.com', 'test@test.com'];
+        let recipientSelectList = [];
+        userList.forEach(function (element) {
+            recipientSelectList.push({ label: element, value: element })
+        });
+
+        return (
+            <React.Fragment>
+                {this.state.creating && <Backdrop />}
+                {this.state.creating && (
+                    <Modal
+                        title="Post Message"
+                        canCancel
+                        canConfirm
+                        onCancel={this.modalCancelHandler}
+                        onConfirm={this.modalConfirmHandler}
+                    >
+                        <form>
+                            <div className="form-control">
+                                <label htmlFor="receiver">Recipient</label>
+                                <Select options={recipientSelectList} ref={this.recipientElRef} />
+                            </div>
+                            <div className="form-control">
+                                <label htmlFor="message-body">Message Body</label>
+                                <textarea
+                                    id="message-body"
+                                    rows="4"
+                                    ref={this.messageBodyElRef}
+                                />
+                            </div>
+                        </form>
+                    </Modal>
+                )}
+                {this.context.token && (
+                    <div className="messages-control">
+                        <p>Talk with other users!</p>
+                        <button className="btn" onClick={this.startCreateMessageHandler}>
+                            Post Message
             </button>
-          </div>
-        )}
-        <ul className="messages__list">{messageList}</ul>
-      </React.Fragment>
-    );
-  }
+                    </div>
+                )}
+                <ul className="messages__list">{messageList}</ul>
+            </React.Fragment>
+        );
+    }
 }
 
 export default MessagesPage;
