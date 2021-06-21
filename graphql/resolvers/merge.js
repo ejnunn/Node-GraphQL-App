@@ -78,6 +78,16 @@ const transformMessage = message => {
   };
 };
 
+const transformUser = user => {
+  return {
+    ...user._doc,
+    _id: user.id,
+    email: user.email
+  };
+};
+
+
 exports.transformEvent = transformEvent;
 exports.transformBooking = transformBooking;
 exports.transformMessage = transformMessage;
+exports.transformUser = transformUser;

@@ -9,7 +9,8 @@ import './Messages.css';
 class MessagesPage extends Component {
     state = {
         creating: false,
-        messages: []
+        messages: [],
+        users: []
     };
 
     static contextType = AuthContext;
@@ -21,7 +22,7 @@ class MessagesPage extends Component {
     }
 
     componentDidMount() {
-        this.fetchMessages();
+        this.fetchMessages(this.context.userId);
     }
 
     startCreateMessageHandler = () => {
@@ -33,21 +34,19 @@ class MessagesPage extends Component {
         const recipient = this.recipientElRef.current.state;
         const date = new Date().toISOString();
         const messageBody = this.messageBodyElRef.current.value;
-        console.log(recipient, date, messageBody);
         if (recipient.length === 0 || messageBody.trim().length === 0) {
             return;
         }
 
         const token = this.context.token;
         const userId = this.context.userId; // only render messages sent TO this user
-        const recipientId = User.findOne(recipient.userId);
-        const message = { recipientId, date, messageBody };
-        console.log(message);
 
+        const message = { recipient, date, messageBody };
+        console.log(message);
         const requestBody = {
             query: `
                 mutation {
-                    sendMessage(messageInput: {recipient: "60c3b3ed5a12956c3b8194bb", date: "2021-06-20T07:32:27.781Z", body: "Test message body."}) {
+                    sendMessage(messageInput: {recipient: "${message.recipient.value.value}", date: "${message.date}", body: "${message.messageBody}"}) {
                     _id
                     recipient {
                         _id
@@ -90,8 +89,12 @@ class MessagesPage extends Component {
         const requestBody = {
             query: `
                 query {
-                    messages(userId: ${userId}) {
+                    messages(userId: "${userId}") {
                     _id
+                    sender {
+                        _id
+                        email
+                    }
                     recipient {
                         _id
                         email
@@ -100,7 +103,7 @@ class MessagesPage extends Component {
                     body
                     }
                 }
-        `
+            `
         };
 
         fetch('http://localhost:8000/graphql', {
@@ -125,19 +128,71 @@ class MessagesPage extends Component {
             });
     }
 
+    fetchUsers() {
+        const requestBody = {
+            query: `
+                query {
+                    users {
+                        _id
+                        email
+                    }
+                }
+            `
+        };
+
+        fetch('http://localhost:8000/graphql', {
+            method: 'POST',
+            body: JSON.stringify(requestBody),
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+            .then(res => {
+                if (res.status !== 200 && res.status !== 201) {
+                    throw new Error('Failed!');
+                }
+                return res.json();
+            })
+            .then(resData => {
+                const users = resData.data.users;
+                this.setState({ users: users });
+            })
+            .catch(err => {
+                console.log(err);
+            });
+    }
+
     render() {
         const messageList = this.state.messages.map(message => {
             return (
                 <li key={message._id} className="messages__list-item">
-                    {message.title}
+                    <ul className="messages__list-item-header">
+                        <li>
+                            From: {message.sender.email}
+                        </li>
+                        <li>
+                            To: {message.recipient.email}
+                        </li>
+                        <li>
+                            Date: {message.date}
+                        </li>
+                    </ul>
+                    <ul className="messages__list-item-body">
+                        <li>
+                            {message.body}
+                        </li>
+                    </ul>
                 </li>
             );
         });
 
-        const userList = ['ejnunn1@msn.com', 'test@test.com'];
+        if (this.state.users.length === 0) {
+            this.fetchUsers();
+        }
+        const userList = this.state.users;
         let recipientSelectList = [];
         userList.forEach(function (element) {
-            recipientSelectList.push({ label: element, value: element })
+            recipientSelectList.push({ label: element.email, value: element._id })
         });
 
         return (

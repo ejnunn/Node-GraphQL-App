@@ -20,3 +20,14 @@
     padding: 1rem;
     border: 1px solid #0170d1;
   }
+
+  .messages__list-item-header {
+    list-style: none;
+  }
+
+  .messages__list-item-body {
+    margin: 1rem;
+    padding: 1rem;
+    border: 1px solid;
+    list-style: none;
+  }
