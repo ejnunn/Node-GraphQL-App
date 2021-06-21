@@ -42,7 +42,7 @@ class MessagesPage extends Component {
         const userId = this.context.userId; // only render messages sent TO this user
 
         const message = { recipient, date, messageBody };
-        console.log(message);
+
         const requestBody = {
             query: `
                 mutation {
