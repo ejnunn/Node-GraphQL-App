@@ -227,7 +227,7 @@ class MessagesPage extends Component {
                         <p>Talk with other users!</p>
                         <button className="btn" onClick={this.startCreateMessageHandler}>
                             Post Message
-            </button>
+                        </button>
                     </div>
                 )}
                 <ul className="messages__list">{messageList}</ul>
