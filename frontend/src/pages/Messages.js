@@ -205,6 +205,7 @@ class MessagesPage extends Component {
                         canConfirm
                         onCancel={this.modalCancelHandler}
                         onConfirm={this.modalConfirmHandler}
+                        confirmText='Post'
                     >
                         <form>
                             <div className="form-control">
