@@ -6,6 +6,7 @@ import BookingsPage from './pages/Bookings';
 import EventsPage from './pages/Events';
 import MessagesPage from './pages/Messages';
 import MainNavigation from './components/Navigation/MainNavigation';
+import ProfileDetails from './components/ProfileDetails/ProfileDetails';
 import AuthContext from './context/auth-context';
 
 import './App.css';
@@ -37,6 +38,7 @@ class App extends Component {
             }}
           >
             <MainNavigation />
+            <ProfileDetails />
             <main className="main-content">
               <Switch>
                 {this.state.token && <Redirect from="/" to="/events" exact />}
