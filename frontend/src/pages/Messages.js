@@ -45,8 +45,8 @@ class MessagesPage extends Component {
 
         const requestBody = {
             query: `
-                mutation {
-                    sendMessage(messageInput: {recipient: "${message.recipient.value.value}", date: "${message.date}", body: "${message.messageBody}"}) {
+                mutation SendMessage($recipient: String!, $date: String!, $body: String!) {
+                    sendMessage(messageInput: {recipient: $recipient, date: $date, body: $body}) {
                     _id
                     recipient {
                         _id
@@ -56,7 +56,12 @@ class MessagesPage extends Component {
                     body
                     }
                 }
-            `
+            `,
+            variables: {
+                reciptient: message.recipient.value.value,
+                date: message.date,
+                body: message.messageBody
+            }
         };
 
         fetch('http://localhost:8000/graphql', {
@@ -88,8 +93,8 @@ class MessagesPage extends Component {
     fetchMessages(userId) {
         const requestBody = {
             query: `
-                query {
-                    messages(userId: "${userId}") {
+                query FetchMessages($id: ID!) {
+                    messages(userId: $id) {
                     _id
                     sender {
                         _id
@@ -103,7 +108,10 @@ class MessagesPage extends Component {
                     body
                     }
                 }
-            `
+            `,
+            variables: {
+                id: userId
+            }
         };
 
         fetch('http://localhost:8000/graphql', {
